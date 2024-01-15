@@ -38,7 +38,8 @@ kubectl -n argocd patch deployment argocd-server --type json -p='[ { "op": "repl
 
 ![img_3.png](img_3.png)
 
-argocd-server로 접속하기 위한 service인 argocd-server-nodeport도 생성한다. 아래는 service.yml의 내용이다.
+argocd-server로 접속하기 위한 service인 argocd-server-nodeport도 생성한다. 
+아래는 service.yml의 내용이다.
 ```yaml
 apiVersion: v1
 kind: Service
@@ -57,6 +58,9 @@ spec:
       app.kubernetes.io/name: argocd-server
         sessionAffinity: None
         type: NodePort
+```
+```shell
+kubectl apply -f service.yml
 ```
 
 NodePort 타입의 Service를 생성하면 다음으로는 Ingress를 생성하여 외부 네트워크에서 argocd-server로 접근할 수 있도록 해야 한다.
@@ -90,7 +94,6 @@ spec:
                   number: 80
 ```
 public subnet과 로드밸런서 보안 그룹 ID는 자신의 정보를 입력해야 한다.
-
 ```shell
 kubectl apply ‒f ingress.yml
 ```
