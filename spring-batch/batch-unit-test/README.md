@@ -9,5 +9,27 @@
 itemReader는 보통 DB와 결부되어서 많이 사용됩니다. 그래서 DB에서 데이터를 읽어오는 JpaPagingItemReader, JdbcPagingItemReader와 같은 reader들은 단위 테스트를 
 진행할 때 데이터베이스에 미리 데이터를 넣어놓고 단위테스트를 진행하게 됩니다. 아래는 실제 테스트 대상이 되는 코드입니다. 
 ```java
-
+@RequiredArgsConstructor
+@Configuration
+public class BatchConfiguration {
+    ...
+    
+    @Bean
+    @StepScope
+    public JpaPagingItemReader<Product> reader(
+            @Value("#{jobParameters[createDate]}") String createDate
+    ) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("createDate", LocalDate.parse(createDate, DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+    
+        return new JpaPagingItemReaderBuilder<Product>()
+                .name(JOB_NAME + "reader")
+                .entityManagerFactory(entityManagerFactory)
+                .pageSize(chunkSize)
+                .queryString("SELECT p FROM Product p WHERE p.createDate =:createDate")
+                .parameterValues(params)
+                .saveState(false) // (4)
+                .build();
+    }
+}
 ```
