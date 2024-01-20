@@ -28,8 +28,110 @@ public class BatchConfiguration {
                 .pageSize(chunkSize)
                 .queryString("SELECT p FROM Product p WHERE p.createDate =:createDate")
                 .parameterValues(params)
-                .saveState(false) // (4)
+                .saveState(false) 
                 .build();
+    }
+}
+```
+
+위의 코드를 확인해 보면, reader가 @StepScop를 이용해서 JobParamter를 사용하는 것을 확인할 수 있습니다. 그렇다면 테스트 코드에서도 JobParamter를 주입받을 수 있어야 겠습니다. 
+다행히도 테스트 시점에 JobParamter를 입력받아 reader에 전달해주는 기능을 ```StepScopeTestExecutionListener```가 제공합니다.
+그리고 ```@SpringBatchTest``` 어노테이션을 이용하면 자동으로 ```StepScopeTestExecutionListener```이 지원됩니다. 
+
+아래는 위의 reader를 단위테스트로 검증하는 코드입니다. 
+```java
+class UnitTestReaderTest extends BatchTestSupport {
+
+	@Autowired
+	private ProductRepository productRepository;
+
+	@Autowired
+	private JpaPagingItemReader<Product> reader;
+	private static final String ORDER_DATE = "2024-01-16";
+	private static final LocalDate PRODUCT_CREATE_DATE = LocalDate.of(2024, 1, 16);
+
+	@BeforeEach
+	void setUp() { // (1)
+		productRepository.deleteAllInBatch();
+	}
+
+
+	public StepExecution getStepExecution() { // (2)
+		JobParameters jobParameters = new JobParametersBuilder()
+				.addString("createDate", ORDER_DATE)
+				.toJobParameters();
+
+		return MetaDataInstanceFactory.createStepExecution(jobParameters);
+	}
+
+	@Test
+	void doUnitTest() throws Exception {
+		saveProduct("product1", PRODUCT_CREATE_DATE);
+		saveProduct("product2", PRODUCT_CREATE_DATE);
+		saveProduct("product3", PRODUCT_CREATE_DATE);
+
+		BATCH_UNIT_TEST_JOB_reader.open(new ExecutionContext());
+
+		assertThat(reader.read()).isNotNull();
+		assertThat(reader.read()).isNotNull();
+		assertThat(reader.read()).isNotNull();
+		assertThat(reader.read()).isNull(); // (3)
+	}
+
+	private void saveProduct(String product, LocalDate createDate) {
+		productRepository.save(new Product(product, createDate));
+	}
+}
+```
+(1): 다른 단위 테스트간의 격리를 위해 테스트 작업 직전에 db를 지워주고 작업을 진행합니다. 
+
+(2): 해당 getStepExecution 메서드가 JobParamter를 가지고 있는 StepExecution로 교체해주고, reader는 교체된 StepExecution으로 작업을 합니다.
+
+(3): reader의 read 메서드의 경우 더 이상 데이터가 없으면, null을 반환합니다. 예제의 경우 3개의 item을 저장했으므로 4번째 read 메서드는 null을 반환해야 합니다. 
+
+유닛 테스트를 정상적으로 테스트가 통과된 것을 확인하실 수 있습니다. 
+
+![img.png](images/img.png)
+
+그렇다면 ```StepScopeTestExecutionListener```는 어떻게 getStepExecution 메서드를 읽어서 StepExecution을 교체해 주는 걸까요? 
+```java
+public class StepScopeTestExecutionListener implements TestExecutionListener {
+    ...
+
+	protected StepExecution getStepExecution(TestContext testContext) {
+		Object target = testContext.getTestInstance();
+
+		ExtractorMethodCallback method = new ExtractorMethodCallback(StepExecution.class, "getStepExecution");
+		ReflectionUtils.doWithMethods(target.getClass(), method);
+		if (method.getName() != null) {
+			HippyMethodInvoker invoker = new HippyMethodInvoker();
+			invoker.setTargetObject(target);
+			invoker.setTargetMethod(method.getName());
+			try {
+				invoker.prepare();
+				return (StepExecution) invoker.invoke();
+			} catch (Exception e) {
+				throw new IllegalArgumentException("Could not create step execution from method: " + method.getName(),
+						e);
+			}
+		}
+
+		return MetaDataInstanceFactory.createStepExecution();
+	}
+}
+```
+위의 코드를 보면 getStepExecution을 가져오는 부분을 확인하실 수 있습니다. StepExecution 타입을 반환하는 메서드를 찾아서 호출합니다. 
+```java
+ExtractorMethodCallback method = new ExtractorMethodCallback(StepExecution.class, "getStepExecution");
+```
+그리고 context에 새로운 StepExecution이 적용됩니다. 
+```java
+@Override
+public void prepareTestInstance(TestContext testContext) throws Exception {
+    StepExecution stepExecution = getStepExecution(testContext);
+
+    if (stepExecution != null) {
+        testContext.setAttribute(STEP_EXECUTION, stepExecution);
     }
 }
 ```
