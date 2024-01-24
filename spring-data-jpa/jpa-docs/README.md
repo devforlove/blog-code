@@ -146,7 +146,7 @@ public class Board {
 
 	@PostPersist
 	public void afterPersist() {
-		log.info("업데이트 되었습니다.");
+		log.info("저장 되었습니다.");
 	}
 }
 ```
@@ -166,6 +166,10 @@ class CallbackTest {
 }
 ```
 
-다음과 같이 엔티티를 저장하면 자동으로  
+![img_2.png](img_2.png)
+
+다음과 같이 엔티티를 저장하면 자동으로 ```@PostPersist``` 어노테이션이 추가된 메서드가 호출됨을 확인할 수 있습니다.
+
+
 
 
