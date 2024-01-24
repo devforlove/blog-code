@@ -111,5 +111,61 @@ public class Store {
 
 ## @Inheritance
 
+## Persistence Callbacks
+
+Hibernate ORM은 다양한 콜백을 제공합니다.
+
+- @PrePersist: 엔티티가 persist 되기 전에 호출됩니다. 
+- @PreRemove: 엔티티가 remove 될 때 호출됩니다. 
+- @PostPersist: 엔티티가 persist 된 이후에 호출됩니다.
+- @PostRemove: 엔티티가 remove 된 이후에 호출됩니다. 
+- @PreUpdate: 엔티티가 update 되기 이전에 호출됩니다. 
+- @PostUpdate: 엔티티가 update 된 이후에 호출됩니다. 
+- @PostLoad: 엔티티가 현재의 영속성 컨텍스트에 로드 된 이후에 호출됩니다. 
+
+테스트 코드로 작성해서 제대로 동작하는지 확인해보겠습니다. 
+
+```java
+@Entity
+@Getter
+@Slf4j
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Board {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+	private String title;
+
+	@Version
+	private Integer version;
+
+	public Board(String title) {
+		this.title = title;
+	}
+
+	@PostPersist
+	public void afterPersist() {
+		log.info("업데이트 되었습니다.");
+	}
+}
+```
+
+```java
+@SpringBootTest
+class CallbackTest {
+
+	@Autowired
+	private BoardRepository boardRepository;
+
+	@Test
+	public void testCallback() {
+		Board board = new Board("board");
+		boardRepository.save(board);
+	}
+}
+```
+
+다음과 같이 엔티티를 저장하면 자동으로  
 
 
