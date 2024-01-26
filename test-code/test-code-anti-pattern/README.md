@@ -52,7 +52,7 @@ public class Player {
     }
 	
 	public void addPoint(int point) {
-		score += calculatePoint(point); 
+		score += calculator.calculatePoint(point); 
     }
 }
 
@@ -139,8 +139,7 @@ public class SheetDataService {
 	}
 }
 ```
-위의 코드는 테스트 코드에서 restTemplate으로 요청 하는 것을 막기 위해서 ```isTest``` 라는 플레그를 통해 로직을 체크합니다. 
-이렇게 하면 코드의 가독성이 떨어지고, 유지비가 증가합니다. 
+위의 코드는 테스트 코드에서 restTemplate으로 요청 하는 것을 막습니다. 그래서 ```isTest``` 라는 플레그를 통해 테스트 코드인지 체크합니다. 이렇게 하면 코드의 가독성이 떨어지고, 유지비가 증가합니다. 
 
 ### 해결 방법 
 
@@ -153,9 +152,7 @@ public interface SheetDataHelper {
 public class SheetDataService implements SheetDataHelper {
     ...
 	public String getSheetData() {
-		if (!isTest) {
-			restTemplate.getForEntity(String.format(SHEET_API_URL, sheetId, tabName), String.class);
-		}
+        restTemplate.getForEntity(String.format(SHEET_API_URL, sheetId, tabName), String.class);
 	}
 }
 
@@ -187,9 +184,7 @@ class Schedule {
 }
 ```
 
-위의 코드를 보면 ```isProgress``` 메서드 내부에서 현재 시간을 구하기 위해 ```LocalDateTime.now()``` 메서드를 사용하고 있습니다. 
-하지만 ```LocalDateTime.now()``` 는 테스트 코드가 수행될 때마다 다른 결과를 발생시킵니다. 테스트 코드가 시간에 따라 성공하기도, 실패하기도 한다면 이는 
-테스트 코드의 리펙토링 내성이 좋지 않다는 증거입니다. 
+위의 코드를 보면 ```isProgress``` 메서드 내부에서 현재 시간을 구하기 위해 ```LocalDateTime.now()``` 메서드를 사용하고 있습니다. 하지만 ```LocalDateTime.now()``` 는 테스트 코드가 수행될 때마다 다른 결과를 발생시킵니다. 테스트 코드가 시간에 따라 성공하기도, 실패하기도 한다면 이는 테스트 코드의 리펙토링 내성이 좋지 않다는 증거입니다. 
 ```java
 @Test
 public void scheduleTest(int value1, int value2, int expected) {
