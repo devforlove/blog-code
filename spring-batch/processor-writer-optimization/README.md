@@ -104,42 +104,42 @@ public class UserBatchRepository extends QuerydslRepositorySupport {
 
 ```java
 @StepScope
-	public ItemWriter<Product> writer() {
-		return chunk -> {
-			List<? extends Product> items = chunk.getItems();
+public ItemWriter<Product> writer() {
+    return chunk -> {
+        List<? extends Product> items = chunk.getItems();
 
-			Connection connection = dataSource.getConnection();
+        Connection connection = dataSource.getConnection();
 
-			PreparedStatement statement = connection.prepareStatement(
-                """
-                    UPDATE user
-                    SET grade = ?,
-                        greade_point = ?
-                    where id = ?
-                """
-            );
+        PreparedStatement statement = connection.prepareStatement(
+            """
+                UPDATE user
+                SET grade = ?,
+                    greade_point = ?
+                where id = ?
+            """
+        );
 
-			try {
-				for (User user : List<User> users) {
-					statement.setString(1, user.getGrade());
-					statement.setInt(2, user.getGradePoint());
-					statement.setLong(3, user.getId());
-					statement.addBatch(); // (1)
-				}
-				
-				statement.executeBatch(); // (2)
-			} catch (Exception e) {
-				throw e;
-			} finally {
-				if (!statement.isClosed()) {
-					statement.close();
-				}
-				if (!connection.isClosed()) {
-					connection.close();
-				}
-			}
-		};
-	}
+        try {
+            for (User user : List<User> users) {
+                statement.setString(1, user.getGrade());
+                statement.setInt(2, user.getGradePoint());
+                statement.setLong(3, user.getId());
+                statement.addBatch(); // (1)
+            }
+            
+            statement.executeBatch(); // (2)
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            if (!statement.isClosed()) {
+                statement.close();
+            }
+            if (!connection.isClosed()) {
+                connection.close();
+            }
+        }
+    };
+}
 ```
 
 (1): addBatch를 통해 유저의 누적된 레코드를 Chunk Size 만큼 모읍니다.

@@ -9,9 +9,9 @@ Spring JPA 기반에서 개발하다보면 아래 라이브러리를 사용하�
 
 ## @SoftDelete 
 
-데이터를 삭제하는 방법에는 ```hard delete```, ```soft delete``` 두가지 방법이 있습니다.
-- ```hard delete```는 db에 직접 delete 쿼리를 날려 row를 삭제합니다.
-- ```soft delete```는 db에 특정 칼럼의 상태값을 deleted 상태로 update 하여, 해당 row가 삭제되었음을 나타냅니다. 
+데이터를 삭제하는 방법에는 hard delete, soft delete 두가지 방법이 있습니다.
+- hard delete는 db에 직접 delete 쿼리를 날려 row를 삭제합니다.
+- soft delete는 db에 특정 칼럼의 상태값을 deleted 상태로 update 하여, 해당 row가 삭제되었음을 나타냅니다. 
 
 기존에는 delete 쿼리를 오버라이드하는 ```@SQLDelete``` 어노테이션을 사용하여 delete 쿼리를 변경해주었습니다. 
 그리고 ```@Where``` 어노테이션을 사용하여 deleted 상태의 row는 가져오지 않도록 soft delete를 구현하였습니다. 
@@ -71,7 +71,7 @@ void softDeleteTest() {
     assertThat(optionalStore.isPresent()).isFalse();
 }
 ```
-![img_1.png](img_1.png)
+![img_1.png](images/img_1.png)
 
 ## @ElementCollection, @CollectionTable
 
@@ -109,7 +109,71 @@ public class Store {
 이와는 달리 ```@OneToMany```를 이용하면 Many 측이 단순한 컬렉션이 아닌 자식 엔티티로 인정 받습니다. 
 만약 자식 엔티티로써 인정받을 필요가 없고, 엔티티의 속성 뿐이라면 ```@ElementCollection```만 사용하는 것이 Fit한 처리일 수 있습니다. 
 
-## @Inheritance
+## @SqlRestriction
+
+soft delete된 데이터는 가져오지 않기 위해 기존에는 ```@Where``` 어노테이션을 이용하여 제외했습니다. 
+하지만 ```@Where``` 는 deprecated 되었습니다. 대신 이젠 ```@SqlRestriction```을 사용합니다. 
+
+아래 Account 클래스를 보면 active 칼럼이 true인 레코드만 조회합니다. 
+```java
+@Entity(name = "Account")
+@SQLRestriction("active = true")
+public static class Account {
+
+	@Id
+	private Long id;
+
+	@ManyToOne
+	private Client client;
+
+	@Column(name = "account_type")
+	@Enumerated(EnumType.STRING)
+	private AccountType type;
+
+	private Double amount;
+
+	private Double rate;
+
+	private boolean active;
+}
+```
+쿼리를 직접 확인해 보면 active가 true인 레코드만 조회합니다. 
+
+![img_3.png](images/img_3.png)
+
+만약 연관관계를 맺고 있는 엔티티에서 타입 별로 다른 필드로 나누어야 할 경우에도 ```@SqlRestriction```을 이용할 수 있습니다. 
+아래 Client 엔티티 클래스를 보겠습니다. 
+```java
+@Getter
+@Entity(name = "CLIENT_TABLE")
+@NoArgsConstructor
+public class Client {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @SQLRestriction("account_type = 'DEBIT'")
+    @OneToMany(mappedBy = "client")
+    private List<Account> debitAccounts = new ArrayList<>();
+
+    @SQLRestriction("account_type = 'CREDIT'")
+    @OneToMany(mappedBy = "client")
+    private List<Account> creditAccounts = new ArrayList<>();
+
+    public void addAccount(Account account) {
+        if(account.getType() == AccountType.CREDIT) {
+            creditAccounts.add(account);
+        } else {
+            debitAccounts.add(account);
+        }
+        account.setClient(this);
+    }
+}
+```
+타입별로 ```DEBIT```과 ```CREDIT```이 있습니다. 그리고 해당 타입별로 다른 필드로 연관관계 엔티티를 매핑합니다. 
+아래는 적용시 쿼리입니다. 
+
+![img_4.png](images/img_4.png)
 
 ## Persistence Callbacks
 
@@ -146,7 +210,7 @@ public class Board {
 
 	@PostPersist
 	public void afterPersist() {
-		log.info("저장 되었습니다.");
+		log.info("업데이트 되었습니다.");
 	}
 }
 ```
@@ -166,7 +230,7 @@ class CallbackTest {
 }
 ```
 
-![img_2.png](img_2.png)
+![img_2.png](images/img_2.png)
 
 다음과 같이 엔티티를 저장하면 자동으로 ```@PostPersist``` 어노테이션이 추가된 메서드가 호출됨을 확인할 수 있습니다.
 
