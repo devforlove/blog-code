@@ -70,7 +70,7 @@ class UnitTestReaderTest extends BatchTestSupport {
 		saveProduct("product2", PRODUCT_CREATE_DATE);
 		saveProduct("product3", PRODUCT_CREATE_DATE);
 
-		BATCH_UNIT_TEST_JOB_reader.open(new ExecutionContext());
+		reader.open(new ExecutionContext());
 
 		assertThat(reader.read()).isNotNull();
 		assertThat(reader.read()).isNotNull();
