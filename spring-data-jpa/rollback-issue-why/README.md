@@ -139,7 +139,7 @@ private void processCommit(DefaultTransactionStatus status) throws TransactionEx
                 "Transaction silently rolled back because it has been marked as rollback-only");
     }
 ...
-}
+} 
 ```
 
 위의 코드를 확인한 결과 outer 트랜잭션에선 try/catch로 예외를 잡는 것과는 별개로, inner 트랜잭션에서 예외 발생시 트랜잭션이 롤백이 된다는 것을 확인할 수 있습니다.  
