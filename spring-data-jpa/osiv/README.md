@@ -49,7 +49,7 @@ OSIV를 적용하면 ```@Transactional``` 이전에 이미 ```EntityManager```�
 
 ```@Transactional```에 의해 트랜잭션이 시작되면 ```doGetTransaction``` 메서드가 호출됩니다. 
 JpaTransactionManager의 ```doGetTransaction``` 메서드에서는 ```TransactionSynchronizationManager```에서 스레드에 할당된 ```EntityManager```를 찾습니다. 
-OSIV가 설정되어 있다면 항상 스레드에 ```EntityManager```가 할당되어있습니다. 
+OSIV가 설정되어 있다면 항상 스레드에 ```EntityManager```가 할당되어있어서 새로운 ```EntityManager```를 생성하지 않습니다. 
 
 여기서 중요한 부분은 setEntityManagerHolder에 newEntityManagerHolder를 false로 넘기는 부분입니다. 
 OSIV가 설정되어 있다면 항상 ```EntityManager```는 이미 존재하기에 항상 newEntityManagerHolder는 false로 넘어갑니다. 
@@ -74,5 +74,34 @@ public void setEntityManagerHolder(
 }
 ```
 
+
+
 ## doCleanupAfterCompletion
 
+트랜잭션이 종료되는 시점에 ```doCleanupAfterCompletion``` 메서드가 호출되면서 ```EntityManager```를 종료합니다. 하지만 newEntityManagerHolder가 true인 경우에만 종료합니다. 
+만약 OSIV가 설정되어 있다면 항상 newEntityManagerHolder는 false이기 때문에 ```EntityManager```는 종료되지 않습니다.
+아래는 ```doCleanupAfterCompletion``` 메서드의 일부분입니다. 
+
+```java
+if (txObject.isNewEntityManagerHolder()) {
+    EntityManager em = txObject.getEntityManagerHolder().getEntityManager();
+    if (logger.isDebugEnabled()) {
+        logger.debug("Closing JPA EntityManager [" + em + "] after transaction");
+    }
+    EntityManagerFactoryUtils.closeEntityManager(em);
+}
+```
+
+위의 두 메서드(doGetTransaction, doCleanupAfterCompletion)를 살펴보았을때, OSIV가 설정되어 있다면 새로운 ```EntityManager```를 만들지 않고 ```OpenEntityManagerInViewInterceptor```에서 만들어진 ```EntityManager```를 재사용하는 것을 알 수 있습니다. 
+
+## 정리
+
+기존에는 무조건 ```open-in-view``` 속성을 끄는 것이 바람직하다고 생각했었습니다. 
+- Controller 까지 영속성 컨텍스트와 db 커넥션을 유지하는 것은 비효율적이기 때문
+
+그러나 OSIV 관련 코드를 분석해본 결과, OSIV는 영속성 컨텍스트의 생명주기와 재활용에 밀접한 연관이 있었습니다. 
+- 트랜잭션 밖에서 재조회 시 영속성 컨텍스트를 활용할 수 있다. 
+- 요청 1개당 ```EntityManager```를 1개만 생성해서 재활용할 수 있다. 
+
+느낀점은 OSIV를 무조건 끄는 게 좋은 것이 아니라 **Trade-Off** 관계라는 것이었습니다. 
+따라서 OSIV를 사용자의 요청이 많이 발생하는 어플리케이션에 적용하는 것은 부적절할 수 있지만, 사용자의 요청이 적은 어드민 서버에는 적용해보면 좋을 것이라고 생각했습니다. 
