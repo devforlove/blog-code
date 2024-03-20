@@ -125,7 +125,32 @@ Chunk<O> items = Chunk.of(new Object[]{outputIterator.next()});
 
 ## Retry 
 
+Retry는 Skip과 달리 예외가 발생해도 건너뛰지 않고, 재시도 합니다. 
 
+### ItemProcessor에서 예외 발생시 Retry 동작
+
+```java
+if (this.canRetry(retryPolicy, context) && !context.isExhaustedOnly()) {
+    try {
+        if (this.logger.isDebugEnabled()) {
+            this.logger.debug("Retry: count=" + context.getRetryCount());
+        }
+
+        lastException = null;
+        result = retryCallback.doWithRetry(context);
+        this.doOnSuccessInterceptors(retryCallback, context, result);
+        Object var35 = result;
+        return var35;
+    } catch (Throwable var31) {
+        Throwable e = var31;
+        lastException = var31; 
+    ...
+```
+위의 ```canRetry``` 메서드 내부에서 재시도 횟수를 체크합니다. 만약 예외가 발생했는데 재시도 횟수를 넘어가면 더 이상 재시도를 하지 않고 작업이 중단됩니다. 
+만약 예외가 발생하면 Chunk의 처음으로 가서, reader 부터 작업을 합니다. 
+
+
+### ItemWriter에서 예외 발생시 Retry 동작
 
 
 
