@@ -104,3 +104,5 @@ pod yaml파일을 만들고 ```/etc/kubernetes/manifests``` 위치에 둡니다.
 kubectl run nginx-static-pod --image=nginx --port=80 --dry-run=client -o yaml > nginx-static-pod.yaml
 ```
 
+## Pod
+
