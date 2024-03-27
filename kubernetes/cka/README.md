@@ -106,3 +106,4 @@ kubectl run nginx-static-pod --image=nginx --port=80 --dry-run=client -o yaml > 
 
 ## Pod
 
+## Service
