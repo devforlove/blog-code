@@ -106,4 +106,50 @@ kubectl run nginx-static-pod --image=nginx --port=80 --dry-run=client -o yaml > 
 
 ## Pod
 
+## Deployment
+```
+문제 
+a. webserver라는 이름으로 deployment를 생성하시오
+- Name: webserver
+- 2 replicas
+- label: app_env_stage=dev
+- container name: webserver
+- container image: nginx:1.14
+b. 다음, webserver Deployment의 pod 수를 3개로 확장하시오 
+```
+
+```shell
+kubectl create deployment webserver --image=nginx:1.14 --replicas=2 --dtry-run=client -o yaml > webserver.yaml
+```
+
+deployment의 yaml 파일로 만들고 ```kubectl apply``` 명령어로 deployment 생성합니다.
+
+### 스케일 아웃 
+```shell
+kubectl scale deployment webserver --replicas=3
+```
+
+```
+문제 
+Deployment를 이용해 nginx 파드를 3개 배포한 다음 컨테이너 이미지 버전을 rolling update 하고 
+update record를 기록합니다. 마지막으로 컨테이너 이미지를 previous revision 으로 roll back 합니다. 
+- name: eshop-payment
+- image: nginx
+- image version: 1.16
+- label: app=payment, environment=production
+- update image version: 1.17 
+```
+ 
+### 롤링 업데이트
+```shell
+kubectl set image deployment eshop-payment nginx=nginx:1.17 -- record
+```
+
+### 롤백 
+```shell
+kubectl rollout history deployment eshop-payment # 히스토리 확인
+kubectl rollout undo deployment eshop-payment 
+```
+
+
 ## Service
