@@ -409,3 +409,41 @@ spec:
 
 ## Ingress
 
+```
+app-ingress.yaml 파일을 생성하고, 다음 조건의 ingress를 구성하세요 
+- name: app-ingress
+- NODE_PORT:30080으로 접속했을 때 nginx 서비스로 연결 
+- NODE_PORT:30080/app으로 접속했을 때 appjs-service 서비스로 연결 
+
+Ingress 구성에 다음의 annotation을 포함시키세요
+annotations: 
+    kubernetes.io/ingress.class: nginx
+```
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: ingress-nginx
+  name: app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 80
+      - path: /app
+        pathType: Prefix
+        backend:
+          service:
+            name: appjs-service
+            port:
+              number: 80
+```
