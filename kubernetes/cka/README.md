@@ -447,3 +447,23 @@ spec:
             port:
               number: 80
 ```
+
+## coreDNS
+
+```
+image nginx를 사용하는 resolver pod를 생성하고, resolver-service라는 service를 구성합니다. 
+클러스터 내에서 service와 pod 이름을 조회할 수 있는지 테스트합니다. 
+- dns 조회에 사용하는 pod 이미지는 busybox이고, service와 pod이름 조회는 nslookup을 사용합니다. 
+- service 조회 결과는 /var/CKA2022/nginx.svc에 pod name 조회 결과는 /var/CKA2022/nginx.pod 파일에 기록합니다. 
+```
+
+```shell
+kubectl run resolver --image=nginx # pod 생성  
+kubectl expose pod resolver --port 80 --name=resolver-service # service 생성 
+```
+
+```shell
+kubectl run test --image=busybox -it --rm -- /bin/sh 
+nslookup 10-244-1-46.default.pod.cluster.local #pod 이름 -> pod dns 
+nslookup 10.106.20.222 #clusterIP -> 서비스 dns
+```
