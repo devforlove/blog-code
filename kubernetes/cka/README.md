@@ -467,3 +467,25 @@ kubectl run test --image=busybox -it --rm -- /bin/sh
 nslookup 10-244-1-46.default.pod.cluster.local #pod 이름 -> pod dns 
 nslookup 10.106.20.222 #clusterIP -> 서비스 dns
 ```
+
+## Storage
+
+```
+다음 조건에 맞춰서 nginx 웹서버 pod가 생성한 로그파일을 받아서 STDOUT 으로 출력하는 busybox 컨테이너를 운영하시오
+- pod Name: weblog
+
+- Web Container 
+- image: nginx:1.17
+- volume mount: /var/log/nginx
+- readwrite
+
+- Log Container
+- image: busybox
+- command: /bin/sh, -c, "tail -n+1 -f /data/access.log"
+- Volume mount: /data
+- readonly
+
+emptyDir 볼륨을 통한 데이터 공유 
+
+- Log Container
+```
