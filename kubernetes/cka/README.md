@@ -470,6 +470,7 @@ nslookup 10.106.20.222 #clusterIP -> 서비스 dns
 
 ## Storage
 
+### 문제 1
 ```
 다음 조건에 맞춰서 nginx 웹서버 pod가 생성한 로그파일을 받아서 STDOUT 으로 출력하는 busybox 컨테이너를 운영하시오
 - pod Name: weblog
@@ -488,4 +489,67 @@ nslookup 10.106.20.222 #clusterIP -> 서비스 dns
 emptyDir 볼륨을 통한 데이터 공유 
 
 - Log Container
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: weblog
+spec:
+  containers:
+  - image: nginx:1.17
+    name: web
+    volumeMounts:
+    - mountPath: /var/log/nginx
+      name: log-volume
+  - image: busybox
+    name: log
+    args: [/bin/sh, -c, 'tail -n+1 -F /data/access.log']
+    volumeMounts:
+      - mountPath: /data
+        name: log-volume
+        readOnly: true
+  volumes:
+  - name: log-volume
+    emptyDir: {}
+```
+
+### 문제 2
+
+```
+/data/cka/fluentd.yaml 파일에 다음 조건에 맞게 볼륨 마운트를 설정하시오 
+worker node의 도커 컨테이너 디렉토리를 동일 디렉토리로 pod에 마운트 하시오
+Worker node의 /var/log 디렉토리를 fluentd Pod에 동일 디렉토리로 마운트하시오 
+```
+
+```yaml
+apiVersion: v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+spec:
+  selector:
+    matchLables:
+      name: fluentd
+  template:
+    metadata:
+      labels:
+        name: fluentd
+    spec:
+      volumes:
+      - name: dockercontainerdir
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlogdir
+        hostPath:
+          path: /var/log
+      containers:
+        - name: fluentd
+          image: fluentd
+          volumeMounts:
+          - mountPath: /var/lib/docker/containers
+            name: dockercontainerdir
+          - mountPath: /var/log
+            name: varlogdir
 ```
