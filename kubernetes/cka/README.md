@@ -553,3 +553,117 @@ spec:
           - mountPath: /var/log
             name: varlogdir
 ```
+
+### 문제 3 
+```
+pv001라는 이름으로 size 1Gi, access mode ReadWriteMany를 사용하여 persistent volume을 생성합니다. 
+volume type은 hostPath이고 위치는 /tmp/app-config 입니다. 
+```
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv001
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /tmp/app-config
+```
+
+### 문제 4
+```
+다음의 조건에 맞는 새로운 PersistentVolumeClaim을 생성하시오 
+Name: pv-volume
+Class: app-hostpath-sc
+Capacity: 10Mi
+
+앞서 생성한 pv-volume PersistentVolumeClaim을 mount하는 Pod를 생성하시오
+Name: web-server-pod
+Image: nginx
+Mount path: /usr/share/nginx/html
+volume에서 ReadWriteMany 액세스 권한을 가지도록 구성합니다. 
+```
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: 
+  name: pv-volume
+spec:
+  storageClassName: app-hostpath-sc 
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Mi
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server-pod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/usr/share/nginx/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: pv-volume
+```
+
+## trouble shooting
+
+### 문제 1
+
+```
+Pod custom-app의 로그 모니터링 후 'file not found' 오류가 이쓴ㄴ 로그 라인 추출해서 
+/var/CK2022/CUSTOM-LOG001 파일에 저장하시오
+```
+
+```yaml
+kubectl logs custom-app | grep 'file not found' > /var/CK2022/CUSTOM-LOG001
+```
+
+### 문제 2
+```
+클러스터에 구성된 모든 PV를 capacity 별로 sort하여 /var/CKA2022/my-pv-list 파일에 저장하시요
+PV 출력 결과를 sort하기 위해 kubectl 명령만 사용하고, 그외 리눅스 명령은 적용하지 마시오
+```
+
+```
+kubectl get pv --sort.by='{.spec.capacity.storage}' > /var/CKA2022/my-pv-list
+```
+
+### 문제 3
+
+```
+Worker Node 동작 문제 해결 
+hk8s-w2라는 이름의 worker node가 현재 NotReady 상태에 있습니다. 이 상태의 원인을 조사하고 hk8s-w2 노드를 Ready 상태로 전환하여 영구적으로 유지되도록 운영하시오
+```
+
+```shell
+ssh hk8s-w2
+sudo -i 
+docker ps 
+systemctl status docker # 도커 엔진 시작중인지 확인  
+systemctl status kubelet # kubelet 데몬이 시작중인지 확인 
+systemctl enable --now kubelet # 지금 당장 시작하고 다음 번에도 영구적으로 시작한다. 
+```
+
+```shell
+ssh hk8s-w2
+sudo -i 
+docker ps 
+systemctl status docker # 도커 엔진 시작중인지 확인  
+systemctl status kubelet # kubelet 데몬이 시작중인지 확인 
+systemctl enable --now docker # 지금 당장 시작하고 다음 번에도 영구적으로 시작한다. 
+```
