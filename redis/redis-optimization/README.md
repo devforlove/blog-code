@@ -28,3 +28,18 @@ noEviction으로 설정되면 redis의 메모리가 maxmemory에 도달했을 �
 - LFU 알고리즘에선 가장 적게 참조된 key를 삭제합니다. 
 
 
+Redis eviction 프로세스는 다음과 같이 진행됩니다. 
+- 클라이언트가 새로운 command를 실행하여, 더 많은 데이터가 추가됩니다. 
+- Redis는 메모리 사용량을 확인하고, 설정된 maxmemory 값보다 크면 정책에 따라 keys를 evict합니다. 
+- 새로운 command가 실행됩니다. 
+
+### 쓰기 증폭 
+하지만 문제는 위 과정 중에 Redis가 메모리를 회수하는 동안 write 증폭 문제가 발생할 수 있습니다. 
+
+Redis의 eviction 작동 방식에서, maxmemory 제한이 설정되고, maxmemory-policy가 "noeviction"이 아닌 경우, Redis 메모리 회수 프로세스는 클라이언트가 새로운 command를 실행할 때마다 트리거됩니다. 
+또한 Redis가 Replicas와 연결된 경우, Key 제거 작업이 replica 노드와 동기화 되어 write 증폭 문제가 발생할 수 있습니다. 
+
+![img_1.png](img_1.png)
+
+이처럼 쓰기 증폭으로 인해 오벼헤드가 발생할 수 있기 때문에 항상 maxmemory > used_memory 상태로 Redis 서버가 실행되도록 구성하는 것이 좋습니다. 
+
