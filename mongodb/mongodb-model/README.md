@@ -71,9 +71,13 @@ Embedded Data 방식은 조회 성능이 좋지만, 업데이트를 희생합니
 ## Subset pattern 
 
 
+## 다양한 패턴 
 
-Embedded Data
-reference 
-
-- 다형성 패턴
-- 속성 패턴 
+MongoDB의 모델을 구현하는데에는 Subset pattern 이외에도 다양한 패턴들이 있습니다.
+- Computed pattern
+- Attribute pattern 
+- Bucket pattern 
+- Extended Reference Pattern 
+- Approximation patter
+- Tree pattern 
+- 
