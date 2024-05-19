@@ -50,10 +50,47 @@ Primary가 일시적인 네트워크 오류, 지속적인 운영 중단 등의 �
 하지만 재시도의 문제는 일시적인 네트워크 오류가 원인이었다면, 데이터가 중복 저장될 위험이 있다는 것입니다. 
 
 따라서 mongoDB에서는 재시도 가능한 쓰기 옵션을 제공합니다. 
+만약 ```Spring Data MongoDB```를 사용한다면, yaml 파일에 아래와 같이 입력합니다. 
 
-## Secondary에서 읽기 
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://<username>:<password>@<cluster-name>.<uri>/?retryWrites=true&w=majority
+      database: 
+```
 
-기본적으로 복제 셋에서는 Primary에만 읽기와 쓰기를 수행할 수 있습니다. 하지만 만약 Primary에 장애가 발생한다면 어떻게 될까요? 읽기와 쓰기 작업 모두 수행할 수 없을 것입니다. MongoDB에는 Primary에 장애가 발생한 상황에서 Secondary에 읽기 작업을 요청할 수 있도록 하는 설정을 제공합니다.
+
+```retryWrites``` 옵션이 true 이므로 쓰기 작업이 재시도 되더라도 멱등적으로 적용됩니다. 
+따라서, 재시도 가능한 쓰기를 설정하면 서버는 각 쓰기 연산에 대해 고유한 식별자를 유지합니다. 그리고 재시도 발생시 쓰기를 다시 적용하는 대신 쓰기가 성공했음을 나타내는 메시지를 반환합니다. 
+
+## 쓰기 복제시 대기하기  
+
+애플리케이션의 요구 사항에 따라, 모든 쓰기가 서버에서 확인되기 전에 대부분의 복제 셋에 복제되도록 요구할 수 있습니다. 
+
+복제 셋에 복제될때 까지 대기를 한다면 데이터 안정성을 높이고, 롤백을 최소화 할 수 있습니다.  
+Primary에 마지막으로 반영된 쓰기가 Secondary에 복제되지 않은 채로 Primary에 장애가 발생하면, 구 Primary에만 저장되어 있던 데이터는 롤백됩니다. 
+그리고 롤백된 데이터는 수동적으로 반영해야 합니다. 따라서 롤백 파일을 수동적으로 적용하기 전까지 롤백된 데이터는 사라진 상태가됩니다. 
+
+이러한 상황을 막기 위해서 MongoDB는 과반수의 Secondary에 복제를 수행하고 어플리케이션에 성공을 응답하는 ```writeConcern``` 옵션을 제공합니다. 만약 과반수의 Secondary에 저장되지 않았다면 어플리케이션은 재시도를 수행하게 됩니다. 
+
+만약 ```Spring Data MongoDB```를 사용한다면, MongoTemplate 빈을 이용해서 설정할 수 있습니다. 
+```java
+@Configuration
+class MongoDBConfiguration {
+	@Bean
+	public MongoOperations mongoTemplate( MongoDatabaseFactory factory, MongoConverter converter ) {
+	    MongoTemplate mongoTemplate = new MongoTemplate( factory, converter );
+	    mongoTemplate.setWriteConcern( WriteConcern.MAJORITY );
+	    return mongoTemplate;
+	}
+}
+```
+
+```MAJORITY``` 옵션은 과반수의 세컨더리에 복제가 되었을 경우에 MongoDB가 쓰기에 대해 응답합니다. 추가적으로 복제에 성공한 노드 갯수를 지정할 수도 있습니다. 
+
+## 세컨더리로 읽기 전송 
+
 
 
 
