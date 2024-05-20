@@ -91,6 +91,31 @@ class MongoDBConfiguration {
 
 ## 세컨더리로 읽기 전송 
 
+MongoDB에서는 기본적으로 Primary를 이용해서 읽기와 쓰기 작업을 합니다. 하지만 만약 Primary에 문제가 발생한다면 어플리케이션 서버에서는 읽기와 쓰기 모두 하지 못하는 상황이 발생하게 됩니다. 이 경우 Secondary에 읽기에 대한 요청을 전달할 수 있습니다. 
+물론, Primary에서 Secondary로 복제해 가기 전에 Secondary를 읽으면 데이터가 없는 현상이 발생할 수 있습니다. 이 경우는 이전에 설명했던 ```writeConcern``` 설정을 통해 데이터가 과반수의 Secondary에 복제되도록 할 수 있습니다. 
+
+옵션의 종류는 다음과 같습니다.
+- primary
+  - 언제나 primary에만 읽기 요청 
+- primaryPreferred
+  - 이용 가능한 primary가 없을 경우 secondary에 읽기 요청  
+- secondary
+  - 언제나 secondary에만 읽기 요청
+- secondaryPreferred
+  - 이용 가능한 secondary가 없을 경우 primary에 읽기 요청 
+
+Spring Data MongoDB에서는 MongoTemplate으로 아래와 같이 설정합니다. 
+```java
+@Configuration
+class MongoDBConfiguration {
+	@Bean
+	public MongoOperations mongoTemplate( MongoDatabaseFactory factory, MongoConverter converter ) {
+	    MongoTemplate mongoTemplate = new MongoTemplate( factory, converter );
+	    mongoTemplate.setReadPreference( ReadPreference.secondaryPreferred() );
+	    return mongoTemplate;
+	}
+}
+```
 
 
 
