@@ -28,4 +28,42 @@ spring-MVC도 서블릿 컨테이너 초기화를 위해 다음 경로에 org.sp
 WAS의 규칙에 의해, WAS가 구동하는 시점에 ```SpringServletContainerInitializer```의 onStartup 메서드를 호출합니다. 
 
 
-서블릿 컨테이너 초기화 이후에 어플리케이션 초기화가 진행됩니다.  
+서블릿 컨테이너 초기화 이후에 어플리케이션 초기화가 진행됩니다. 
+
+```java
+@HandlesTypes(WebApplicationInitializer.class)
+public class SpringServletContainerInitializer implements ServletContainerInitializer {
+    ...
+}
+```
+
+방금전에 언급했던 ```SpringServletContainerInitializer``` 클래스 위에 ```@HandlesTypes(WebApplicationInitializer.class)``` 어노테이션을 볼 수 있을 것입니다. 
+```@HandlerTypes``` 어노테이션에 어플리케이션 초기화 인터페이스를 지정하면 ```onStartup``` 메서드의 파라미터로 넘어오는 ```Set<Class<?>> c```에 애플리케이션 초기화 인터페이스의 구현체들을 모두 찾아서 클래스 정보로 전달합니다.
+
+스프링에서는 ```WebApplicationInitializer``` 인터페이스를 어플리케이션 초기화 인터페이스로 지정했습니다. 따라서 서블릿 컨테이너 초기화 시점에 ```WebApplicationInitializer``` 인터페이스의 구현체들이 파라미터로 넘어옵니다. 
+
+![img_2.png](img_2.png)
+
+위의 내용은 모두 서블릿 컨테이너 위에서 동작하는 방식입니다. 따라서 항상 톰캣 같은 서블릿 컨테이너에 배포를 해야만 동작하는 방식입니다. 
+
+
+### WAR 배포 방식의 단점 
+
+WAS에 WAR 파일을 배포하는 방식은 번거롭습니다. 먼저 WAS를 설치해야 하고, WAR 파일을 그 위에 배포해야 합니다. 
+스프링 부트는 이러한 번거로움을 제거하고 ```main()``` 메서드만 실행하면 웹 서버까지 실행되도록 프로세스를 단순화했습니다. 기존의 스프링 프레임워크는 톰캣에 WAR를 배포했다면, 스프링 부트는 JAR 파일안에 톰캣 라이브러리도 함께 포함된 형태입니다. 
+
+![img_3.png](img_3.png)
+
+스프링 부트에서는 main 메서드 호출을 통해 톰캣을 시작하기 때문에 jar 안에 ```META-INF/MANIFEST.MF``` 파일에 실행한 ```main()``` 메서드의 클래스를 지정해주어야 합니다.
+```
+task buildJar(type: Jar) {
+     manifest {
+         attributes 'Main-Class': 'com.example.StartApplicationClass'
+     }
+with jar }
+```
+
+```
+Manifest-Version: 1.0
+ Main-Class: com.example.StartApplicationClass
+```
