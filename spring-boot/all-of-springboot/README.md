@@ -19,7 +19,7 @@ WAS를 사용하기 위해 필요한 기본적인 초기화 과정이 있습니�
 - 서블릿 컨테이너 초기화 
 - 어플리케이션 초기화 
 
-서블릿 컨테이너 초기화를 하기 위해서 ```ServletContainerInitializer``` 인터페이스를 구현하고, 구현 클래스를 ````resources/META-INF/services/jakarta.servlet.ServletContainerInitializer```` 경로에 입력해야 합니다. 
+서블릿 컨테이너 초기화를 하기 위해서 ```ServletContainerInitializer``` 인터페이스를 구현하고, 인터페이스를 ````resources/META-INF/services/jakarta.servlet.ServletContainerInitializer```` 경로에 입력해야 합니다. 
 
 spring-MVC도 서블릿 컨테이너 초기화를 위해 다음 경로에 org.springframework.web.SpringServletContainerInitializer 라는 서블릿 컨테이너 초기화 클래스를 지정했습니다.
 
@@ -54,6 +54,41 @@ WAS에 WAR 파일을 배포하는 방식은 번거롭습니다. 먼저 WAS를 �
 
 ![img_3.png](img_3.png)
 
+스프링 부트에선 내부 라이브러리로 톰캣을 포함하기 때문에, main 메서드만 실행하면 톰캣도 함깨 실행할 수 있습니다.  
+시작 클래스를 살펴보면 main 메서드에서 스프링 부트 어플리케이션을 시작합니다. 
+```java
+@SpringBootApplication
+public class StartApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(StartApplication.class, args);
+    }
+}
+```
+```SpringApplication.run()``` 메서드가 실행되면 다양한 일들이 일어납니다. 
+- 서블릿 컨테이너 초기화 
+- 스프링 컨테이너 생성  
+- 톰캣 실행 
+- 컴포넌트 스캔 
+- 등등 
+
+개발자가 ```java -jar``` 명령어를 이용해 스프링 부트 프로젝트를 실행하면 ```SpringApplication.run()``` 메서드가 수행되면서 스프링 부트가 실행됩니다. 
+
+### jar 파일 빌드와 배포
+추가적으로 내장 톰캣을 사용하면 jar 패키징을 하게됩니다. 
+스프링 부트의 jar 파일을 압축 해제하면 내부적으로 아래와 같은 디렉토리 구조를 확인할 수 있습니다.  
+
+- META-INF
+  - MANIFEST.MF 파일을 읽어서 ```Main-Class```를 읽어서 main 메서드를 실행합니다.
+  - ```Start-Class```에는 개발자가 지정한 main 메서드를 갖는 클래스가 지정됩니다.
+- org/springframework/boot/loader
+  - 해당 디렉토리에는 스프링 부트에서 넣어주는 ```JarLauncher``` 클래스가 있습니다. 이 클래스는 jar 내부의 jar 파일을 읽어들이는 작업을 수행합니다. 따라서 스프링 부트의 시작 클래스 보다 더 먼저 main 메서드를 수행합니다. 
+- BOOT_INF
+  - classes
+    - 개발자가 작성한 클래스가 위치하는 디렉토리 
+  - libs
+    - 의존하고 있는 라이브러리가 위치하는 디렉토리입니다. jar 상태로 라이브러리가 존재합니다.  
+
+
 스프링 부트에서는 main 메서드 호출을 통해 톰캣을 시작하기 때문에 jar 안에 ```META-INF/MANIFEST.MF``` 파일에 실행한 ```main()``` 메서드의 클래스를 지정해주어야 합니다.
 ```
 task buildJar(type: Jar) {
@@ -63,7 +98,6 @@ task buildJar(type: Jar) {
 with jar }
 ```
 
-```
-Manifest-Version: 1.0
- Main-Class: com.example.StartApplicationClass
-```
+## 라이브러리 관리 
+## 자동구성 
+## 외부설정과 프로필 
