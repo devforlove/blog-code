@@ -137,4 +137,75 @@ bom 정보를 확인한다면, 스프링 부트 버전에 맞는 라이브러리
 
 ## 자동구성 
 
-## 외부설정과 프로필 
+스프링 부트는 수 많은 라이브러리들과 연동이 됩니다. 하지만 이런 많은 라이브러리를 사용하면서 필요한 빈(bean)을 직접 등록하는 것은 쉬운 작업이 아닐 것입니다. 빈을 직접 구성하는 것은 라이브러리를 처음 사용하는 개발자에게는 진입장벽으로 작용할 수 있습니다. 
+따라서 스프링 부트에서는 라이브러리의 빈을 자동으로 등록해줍니다. 
+
+자동 구성을 이해하기 위해서는 두 가지 어노테이션을 이해해야 합니다.
+1. @Conditional
+2. @AutoConfiguration
+
+```@Conditional``` 어노테이션은 특정 조건에서 빈을 등록하도록 합니다. 이 어노테이션은 ```Condition``` 인터페이스의 구현체를 인자로 받습니다.
+```Condition``` 인터페이스의 구현은 아래와 같습니다. 
+```java
+@Slf4j
+ public class MemoryCondition implements Condition {
+@Override
+     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+         String memory = context.getEnvironment().getProperty("memory");
+         log.info("memory={}", memory);
+         return "on".equals(memory);
+} 
+```
+
+```java
+@Configuration 
+@Conditional(MemoryCondition.class) 
+public class MemoryConfig {
+    @Bean
+    public MemoryController memoryController() {
+        return new MemoryController(memoryFinder());
+    }
+    @Bean
+    public MemoryFinder memoryFinder() {
+        return new MemoryFinder();
+    }
+}
+```
+위의 Condition 구현체의 조건은 memory 키에 on 값이 있어야 true가 반환되면서 빈이 등록됩니다. 스프링 부트에선 ```@Conditional``` 어노테이션을 이용해서 코드 수정 없이 특정 상황에서만 빈을 등록합니다. 
+
+```@AutoConfiguration```은 빈을 자동으로 등록합니다. 따라서 자동 구성 클래스에 해당 어노테이션을 붙여야 합니다. 
+아래와 같이 코드를 작성한다면, "memory=on"으로 설정 값이 지정되어 있는 경우에 ```MemoryController```, ```MemoryFinder```를 빈으로 등록합니다.
+```java
+@AutoConfiguration
+@ConditionalOnProperty(name = "memory", havingValue = "on")
+public class MemoryAutoConfig {
+    @Bean
+    public MemoryController memoryController() {
+        return new MemoryController(memoryFinder());
+    }
+    @Bean
+    public MemoryFinder memoryFinder() {
+        return new MemoryFinder();
+    }
+}
+```
+그리고 ````src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports```` 파일에 자동구성 클래스의 패키지를 다음과 같이 추가해주어야 합니다. 
+그래야 스프링 부트 구동 시점에 ```MemoryAutoConfig```가 자동으로 실행됩니다.  
+```
+memory.MemoryAutoConfig
+```
+
+스프링 부트에서는 이미 ```spring-boot-autoConfigure``` 라이브러리에 자동구성 클래스들이 입력되어 있습니다. 따라서 스프링 부트가 구동하면 자동으로 해당 경로에서 ```@AutoConfiguration``` 어노테이션이 붙은 자동 구성 클래스에서 ```@Conditional``` 어노테이션에 따라 빈을 조건 부로 등록합니다.  
+![img_4.png](img_4.png)
+
+
+스프링 부트는 기존의 스프링 프레임워크에 비해 개발자에게 편의 기능을 많이 제공해주고 있음을 알 수 있었습니다. 
+- 내장 톰캑 
+  - WAS를 따로 배포하지 않아도 되고, jar 명령 만으로 쉽게 배포를 진행할 수 있다. 
+- 라이브러리 관리
+  - 스프링 부트에선 호환성 있는 라이브러리들을 연결해 주었고, 특정 라이브러리에 필요한 라이브러리들을 묶어서 제공한다. 
+  - 개발자는 단순히 스프링 부트 스타터를 적절하게 추가해주기만 하면 된다.
+- 자동 구성 
+  - 라이브러리를 사용하면서 필요한 빈들을 자동으로 등록해 준다. 따라서 개발자는 직접 라이브러리의 필요한 빈을 등록할 필요가 없다.
+
+스프링 부트의 다양한 지원을 통해 개발자는 불필요한 노력을 최소화 하여 기능 개발에 중점을 둘 수 있게 되었습니다.  
