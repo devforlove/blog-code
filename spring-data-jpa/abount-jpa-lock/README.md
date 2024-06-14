@@ -84,3 +84,5 @@ JPA에서는 ```@Lock``` 어노테이션을 사용하여 선점 잠금을 구현
 - PESSIMISTIC_READ
   - select .. for share mode 를 통해 조회하는 레코드에 대해 공유 잠금을 획득합니다. 
 
+
+
