@@ -93,11 +93,12 @@ fun getGradeWithSwitch(
 }
 ```
 when 구문에 값이 없을 수도 있습니다. 그러면 early return 처럼 동작합니다. when 구문의 조건에 Expression이 올 수 있기 때문에 다양한 처리가 가능합니다.
+
 ```kotlin
 fun judgeNumber3(score: Int, subjects: String) {
     when {
-        score >= 90 && subjects.equals("수학") -> println("수학 통과입니다.")
-        score >= 85 && subjects.equals("영어") -> println("영어 통과입니다.")
+        score >= 90 && subjects == "수학" -> println("수학 통과입니다.")
+        score >= 85 && subjects == "영어" -> println("영어 통과입니다.")
         else -> println("불합격입니다.")
     }
 }
