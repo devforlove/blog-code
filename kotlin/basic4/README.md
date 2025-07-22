@@ -272,14 +272,37 @@ filter, filterIndexed, map, mapIndexed, mapNotNull 등 다양한 함수에 대�
 코틀린에서는 필터, 맵 이외에도 다양한 컬렉션 처리 함수를 제공합니다. 
 
 ```kotlin
-// all
 val isAllApple = fruits.all { fruit -> fruit.name == "사과"}
-// none
-// any
-// count
-// sortedBy
-// sortedByDescending
-// distinctBy
-// first
-// firstOrNull
+val isNoApple = fruits.none { fruit -> fruit.name == "사과 "}
+val isNoApple = fruits.any { fruit -> fruit.factoryPrice >= 10_000 }
+val fruitCount = fruits.count()
+val sortedAscFruits = fruits.sortedBy { fruit -> fruit.currentPrice }
+val sortedDescFruits = fruits.sortedByDescending { fruit -> fruit.currentPrice }
+val distinctFruitNames = fruits.distinctBy { fruit -> fruit.name } 
+    .map { fruit -> fruit.name }
+val firstFruit = fruits.first()
+val firstFruitOrNull = fruits.firstOrNull()
 ```
+all: 모든 원소가 조건을 만족하면 true, 그렇지 않으면 false
+none: 모든 원소가 조건을 만족하지 않으면 true, 그렇지 않으면 false
+any: 원소 중 하나라도 만족하면 true, 그렇지 않으면 false
+count: 원소의 개수 
+sortedBy: 오름차순으로 정렬을 한다.
+sortedByDescending: 내림차순으로 정렬을 한다. 
+distinctBy: 변형된 값을 기준으로 중복 요소를 제거한다.
+first: 첫번째 값을 가져온다. 
+firstOrNull: 첫번째 값 또는 null을 가져온다. 
+
+코틀린에선 다른 컬렉션으로 전환하는 함수도 제공합니다. 
+```kotlin
+// key를 이용해서 Map 생성 
+val groupedMap: Map<String, List<Fruit>> = fruits.groupBy { fruit -> fruit.name }
+val associatedMap = fruits.associateBy { fruit -> fruit.id }
+
+// key, value를 이용해서 Map 생성
+val groupedMapByKeyAndValue: Map<String, List<Long>> = 
+    fruits.groupBy({ fruit -> fruit.name }, { fruit -> fruit.factoryPrice })
+val associatedMapByKeyAndValue: Map<String, List<Long>> = 
+    fruits.groupBy({ fruit -> fruit.name }, { fruit -> fruit.factoryPrice })
+```
+
