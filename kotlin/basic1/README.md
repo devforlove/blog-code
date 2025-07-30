@@ -119,7 +119,7 @@ public static void printAgeIfPerson(Object obj) {
 }
 ```
 
-코틀린에선 아래와 같이 타입을 변경합니다. 
+코틀린에선 아래와 같이 타입을 변경합니다.
 
 ```kotlin
 fun printAgeIfPerson(obj: Any) {
